@@ -59,7 +59,7 @@ export function ReaderReservationsPage({ workspace }) {
     setError("");
     try {
       const result = await readerApi.createReservation(workspace?.token, { bookId: Number(bookId) });
-      setMessage(result.message || `Reservation #${result.reservationId} created.`);
+      setMessage(result.message || "预约成功");
       setBookId("");
       await loadData();
     } catch (requestError) {

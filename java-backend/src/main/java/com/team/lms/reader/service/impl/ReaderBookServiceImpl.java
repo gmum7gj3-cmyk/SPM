@@ -311,12 +311,12 @@ public class ReaderBookServiceImpl implements ReaderBookService {
         }
         Inventory inventory = inventoryMapper.selectByBookId(bookId);
         if (inventory != null && inventory.getAvailableCopies() != null && inventory.getAvailableCopies() > 0) {
-            throw new BusinessException(400, "available books cannot be reserved");
+            throw new BusinessException(400, "当前有库存，请直接借阅");
         }
 
         Reservation existingPendingReservation = reservationMapper.selectPendingByReaderAndBookId(reader.getId(), bookId);
         if (existingPendingReservation != null) {
-            throw new BusinessException(400, "you already have a pending reservation for this book");
+            throw new BusinessException(400, "不能重复预约同一本待处理图书");
         }
 
         boolean hasActiveBorrow = borrowRecordMapper.selectByReaderId(reader.getId()).stream()
@@ -341,8 +341,9 @@ public class ReaderBookServiceImpl implements ReaderBookService {
         reservation.setStatus(ReservationStatus.PENDING);
         reservation.setQueueNo(nextQueueNo);
         reservationMapper.insert(reservation);
+        Reservation savedReservation = reservationMapper.selectById(reservation.getId());
 
-        return toReservationVo(reservation, "reservation created successfully");
+        return toReservationVo(savedReservation == null ? reservation : savedReservation, "预约成功");
     }
 
     private Fine findFineByRecordId(Long recordId) {

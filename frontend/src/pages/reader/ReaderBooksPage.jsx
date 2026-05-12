@@ -10,6 +10,7 @@ export function ReaderBooksPage({ workspace }) {
   const canViewBooks = !permissionsLoaded || permissions.includes("BOOK_VIEW") || permissions.includes("BOOK_SEARCH");
   const canSearch = !permissionsLoaded || permissions.includes("BOOK_SEARCH");
   const canBorrow = !permissionsLoaded || permissions.includes("BORROW_REQUEST");
+  const canReserve = !permissionsLoaded || permissions.includes("RESERVATION");
 
   const [viewMode, setViewMode] = useState("ALL");
   const [keyword, setKeyword] = useState("");
@@ -85,6 +86,27 @@ export function ReaderBooksPage({ workspace }) {
       await loadBooks(viewMode);
     } catch (requestError) {
       setError(requestError.message || "Failed to submit borrow request");
+    } finally {
+      setSubmittingId(null);
+    }
+  }
+
+  async function handleReserve(bookId) {
+    if (!canReserve) {
+      setError("Current reader role cannot create reservations.");
+      return;
+    }
+
+    setSubmittingId(bookId);
+    setMessage("");
+    setError("");
+
+    try {
+      const result = await readerApi.createReservation(workspace?.token, { bookId });
+      setMessage(result.message || "预约成功");
+      await loadBooks(viewMode);
+    } catch (requestError) {
+      setError(requestError.message || "Failed to create reservation");
     } finally {
       setSubmittingId(null);
     }
@@ -220,6 +242,16 @@ export function ReaderBooksPage({ workspace }) {
                               onClick={() => handleBorrow(book.bookId)}
                             >
                               {submittingId === book.bookId ? "Submitting..." : "Request Borrow"}
+                            </button>
+                          ) : null}
+                          {canReserve && (book.availableCopies ?? 0) <= 0 ? (
+                            <button
+                              className="primary-button"
+                              type="button"
+                              disabled={submittingId === book.bookId}
+                              onClick={() => handleReserve(book.bookId)}
+                            >
+                              {submittingId === book.bookId ? "Submitting..." : "预约"}
                             </button>
                           ) : null}
                         </div>
